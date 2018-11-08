@@ -45,7 +45,7 @@ public abstract class Packet {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Type: " + getType() + ", Size: " + sizeOf() + ", Data: ");
+		builder.append("Type: " + getType() + ", Size: " + sizeOf() + ", Data:\n");
 		builder.append(Base64.getEncoder().encodeToString(bytes));
 		builder.append('\n');
 		char[] chars = new char[bytes.length];

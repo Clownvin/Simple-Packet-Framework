@@ -2,8 +2,8 @@ package com.git.clownvin.simplepacketframework.packet;
 
 import com.git.clownvin.simplepacketframework.connection.Connection;
 
-public abstract class AbstractPacketHandler {
-	public abstract boolean handlePacket(final Connection source, final Packet packet);
+public abstract class AbstractPacketHandler<ConnectionT extends Connection> {
+	public abstract boolean handlePacket(final ConnectionT source, final Packet packet);
 	
-	public abstract boolean handleRequest(final Connection source, final Request packet);
+	public abstract boolean handleRequest(final ConnectionT source, final Request packet);
 }
