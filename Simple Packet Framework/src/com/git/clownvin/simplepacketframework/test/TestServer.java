@@ -47,11 +47,10 @@ public class TestServer extends AbstractServer {
 	public static void main(String[] args) throws InterruptedException {
 		ConnectionAcceptor.setConnectionClass(Connection.class);
 		Packets.setPacketDefinition(1, TestPacket.class);
-		Packets.setPacketDefinition(0, PublicKeyPacket.class);
 		Packets.setPacketDefinition(2, TestRequest.class);
 		Packets.setPacketDefinition(3, TestResponse.class);
 		//Packets.debug(true);
-		Packets.setPacketHandler(new AbstractPacketHandler() {
+		Packets.setPacketHandler(new AbstractPacketHandler<Connection>() {
 
 			@Override
 			public boolean handlePacket(Connection source, Packet packet) {
@@ -67,7 +66,7 @@ public class TestServer extends AbstractServer {
 
 			@Override
 			public boolean handleRequest(Connection source, Request packet) {
-				totalBytes += packet.getBytes().length + 4;
+				totalBytes += packet.getBytes().length + 6;
 				source.send(new TestResponse(packet.getReqID()));
 				return true;
 			}

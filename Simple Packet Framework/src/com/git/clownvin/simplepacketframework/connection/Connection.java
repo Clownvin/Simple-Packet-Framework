@@ -8,6 +8,7 @@ import com.git.clownvin.simplepacketframework.packet.Packet;
 import com.git.clownvin.simplepacketframework.packet.Packets;
 import com.git.clownvin.simplepacketframework.packet.PublicKeyPacket;
 import com.git.clownvin.simplepacketframework.packet.Request;
+import com.git.clownvin.simplepacketframework.packet.RequestTimedOutException;
 import com.git.clownvin.simplepacketframework.packet.Response;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
 import com.git.clownvin.simplescframework.connection.PrivateConnection;
@@ -37,7 +38,7 @@ public class Connection extends PrivateConnection {
 		return true;
 	}
 	
-	public final Response getResponse(final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException {
+	public final Response getResponse(final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException, RequestTimedOutException {
 		return Packets.getResponse(this, request);
 	}
 

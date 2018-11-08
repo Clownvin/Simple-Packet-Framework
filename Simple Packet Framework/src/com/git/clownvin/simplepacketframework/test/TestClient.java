@@ -10,17 +10,17 @@ import com.git.clownvin.simplepacketframework.packet.Packet;
 import com.git.clownvin.simplepacketframework.packet.Packets;
 import com.git.clownvin.simplepacketframework.packet.PublicKeyPacket;
 import com.git.clownvin.simplepacketframework.packet.Request;
+import com.git.clownvin.simplepacketframework.packet.RequestTimedOutException;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
 
 public class TestClient {
 	
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException, KeyExchangeIncompleteException {
 		Packets.setPacketDefinition(1, TestPacket.class);
-		Packets.setPacketDefinition(0, PublicKeyPacket.class);
 		Packets.setPacketDefinition(2, TestRequest.class);
 		Packets.setPacketDefinition(3, TestResponse.class);
 		//Packets.debug(true);
-		Packets.setPacketHandler(new AbstractPacketHandler() {
+		Packets.setPacketHandler(new AbstractPacketHandler<Connection>() {
 
 			@Override
 			public boolean handlePacket(Connection source, Packet packet) {
@@ -40,16 +40,22 @@ public class TestClient {
 			
 		});
 		
-		Connection[] connections = new Connection[26];
+		Connection[] connections = new Connection[28];
 		for (int i = 0; i < connections.length; i++) {
 			connections[i] = new Connection(new Socket("localhost", 6667));
-			connections[i].send(new TestPacket(false, new byte[25000]));
+			//connections[i].send(new TestPacket(false, new byte[25000]));
 		}
 		long reqID = 0;
 		while (true) {
 			for (int i = 0; i < connections.length; i++) {
-				
-				//connections[i].getResponse(new TestRequest(reqID++));
+				Request req = new TestRequest(new byte[0]);
+				try {
+					connections[i].getResponse(req);
+					//System.out.println("Sent req with id: "+req.getReqID()+", recieved res with id: "+connections[i].getResponse(req).getReqID());
+				} catch (RequestTimedOutException e) {
+					System.out.println("Request time out!");
+				}
+				;
 				//connections[i].reconnect();
 			}
 		}

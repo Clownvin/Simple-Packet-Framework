@@ -3,6 +3,9 @@ package com.git.clownvin.simplepacketframework.packet;
 import com.git.clownvin.simplepacketframework.connection.Connection;
 
 public final class ResponseListener {
+	
+	private static long requestTimeout = 5000;
+	
 	private final long reqID;
 	private final Connection source;
 	private Response response = null;
@@ -27,12 +30,15 @@ public final class ResponseListener {
 		}
 	}
 	
-	public Response getResponse() throws InterruptedException {
-		while (response == null) {
+	public Response getResponse() throws InterruptedException, RequestTimedOutException {
+		long start = System.currentTimeMillis();
+		while (response == null && System.currentTimeMillis() - start < requestTimeout) {
 			synchronized (this) {
 				this.wait(1);
 			}
 		}
+		if (response == null)
+			throw new RequestTimedOutException("Request timed out.");
 		Response r = response;
 		response = null;
 		return r;

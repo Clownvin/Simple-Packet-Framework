@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import com.git.clownvin.simplepacketframework.connection.Connection;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
 
+@SuppressWarnings("rawtypes")
 public final class Packets {
 
 	private static Hashtable<Short, Class<? extends Packet>> classDefinitions = new Hashtable<>();
@@ -29,12 +30,12 @@ public final class Packets {
 		
 	};
 	
-	public static void setPacketHandler(final AbstractPacketHandler packetHandler) {
+	public static void setPacketHandler(final AbstractPacketHandler<? extends Connection> packetHandler) {
 		Packets.packetHandler = packetHandler;
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static <T extends AbstractPacketHandler> T getPacketHandler() {
+	public static <T extends AbstractPacketHandler<? extends Connection>> T getPacketHandler() {
 		return (T) packetHandler;
 	}
 	
@@ -46,6 +47,7 @@ public final class Packets {
 		listeners.remove(listener);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static boolean handle(Connection source, final Packet packet) {
 		if (packet instanceof Request) {
 			return packetHandler.handleRequest(source, (Request) packet);
@@ -57,7 +59,7 @@ public final class Packets {
 					return true;
 				}
 			}
-			return false;
+			return true;
 		}
 		return packetHandler.handlePacket(source, packet);
 	}
@@ -118,6 +120,7 @@ public final class Packets {
 		short type = (short) (((buffer[0] & 0x7F) << 8) | (buffer[1] & 0xFF));
 		fillBuffer(buffer, in);
 		short size = (short) (((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF));
+		//System.out.println("Read packet with size: "+size);
 		//System.out.println("rSize: "+Integer.toHexString(size)+", "+Integer.toHexString(((buffer[0] & 0xFF) << 8))+", "+Integer.toHexString((buffer[1] & 0xFF)));
 		if (size == -1)
 			throw new SocketException("Socket wants to close.");
@@ -138,9 +141,9 @@ public final class Packets {
 			return packet;
 		} catch (NoSuchMethodException e) {
 			System.out.println("Packet " + cls + "(type: " + type
-					+ ") doesn't have a proper constructor! Please add a constructor with the signature: <init>("+Connection.class.getCanonicalName()+", boolean, byte[][]).");
+					+ ") doesn't have a proper constructor! Please add a constructor with the signature: <init>(boolean, byte[][]).");
 			System.out.println("You should also just call the superconstructor with the same signature, it will handle the rest.");
-			System.out.println("Example: Constructor(Connection connection, boolean construct, byte[][] bytes) { super(connection, construct, bytes); }");
+			System.out.println("Example: Constructor(boolean construct, byte[][] bytes) { super(construct, bytes); }");
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| SecurityException e) {
 			e.printStackTrace();
@@ -149,11 +152,17 @@ public final class Packets {
 		throw new IOException("Failed to read packet.");
 	}
 	
-	public static Response getResponse(final Connection connection, final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException {
+	public static Response getResponse(final Connection connection, final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException, RequestTimedOutException {
 		ResponseListener listener = new ResponseListener(request.getReqID(), connection);
 		addResponseListener(listener);
 		writePacket(connection, request);
-		Response response = listener.getResponse();
+		Response response;
+		try {
+			response = listener.getResponse();
+		} catch (RequestTimedOutException e) {
+			removeResponseListener(listener);
+			throw e;
+		}
 		removeResponseListener(listener);
 		return response;
 	}
@@ -169,6 +178,7 @@ public final class Packets {
 		out.write(buffer);
 		byte[] data = packet.shouldEncrypt() ? connection.encrypt(packet.getBytes()) : packet.getBytes();
 		s = (short) data.length;
+		//System.out.println("Wrote packet with size: "+s);
 		buffer[0] = (byte) (s >>> 8);
 		buffer[1] = (byte) (s & 0xFF);
 		//System.out.println("wSize: "+Integer.toHexString(s)+", "+Integer.toHexString(buffer[0])+", "+Integer.toHexString(buffer[0])+" ::: "+Integer.toHexString(((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF)));

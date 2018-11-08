@@ -18,7 +18,7 @@ public abstract class Packet {
 		return nBytes;
 	}
 	
-	protected final byte[] bytes;
+	protected byte[] bytes;
 
 	public Packet(boolean construct, final byte[] bytes) {
 		this.bytes = bytes;
