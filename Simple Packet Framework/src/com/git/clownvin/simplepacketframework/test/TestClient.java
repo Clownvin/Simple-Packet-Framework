@@ -8,7 +8,6 @@ import com.git.clownvin.simplepacketframework.connection.Connection;
 import com.git.clownvin.simplepacketframework.packet.AbstractPacketHandler;
 import com.git.clownvin.simplepacketframework.packet.Packet;
 import com.git.clownvin.simplepacketframework.packet.Packets;
-import com.git.clownvin.simplepacketframework.packet.PublicKeyPacket;
 import com.git.clownvin.simplepacketframework.packet.Request;
 import com.git.clownvin.simplepacketframework.packet.RequestTimedOutException;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
@@ -45,7 +44,6 @@ public class TestClient {
 			connections[i] = new Connection(new Socket("localhost", 6667));
 			//connections[i].send(new TestPacket(false, new byte[25000]));
 		}
-		long reqID = 0;
 		while (true) {
 			for (int i = 0; i < connections.length; i++) {
 				Request req = new TestRequest(new byte[0]);

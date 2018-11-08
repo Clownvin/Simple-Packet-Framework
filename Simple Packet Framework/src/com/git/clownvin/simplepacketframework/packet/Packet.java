@@ -22,6 +22,7 @@ public abstract class Packet {
 
 	public Packet(boolean construct, final byte[] bytes) {
 		this.bytes = bytes;
+		//System.out.println("Initializing packet with len: "+bytes.length);
 		if (construct)
 			construct(this.bytes);
 	}

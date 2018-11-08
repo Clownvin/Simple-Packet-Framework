@@ -17,6 +17,7 @@ public abstract class Response extends Packet {
 		super(construct, construct ? Arrays.copyOfRange(bytes, 8, bytes.length) : bytes);
 		if (construct) {
 			reqID = ByteBuffer.wrap(bytes).getLong();
+			this.bytes = bytes;
 		} else {
 			throw new IllegalArgumentException("Response(bool, byte[]) must always be used as construction constructor!");
 		}
