@@ -43,7 +43,7 @@ public class Connection extends PrivateConnection {
 	}
 
 	@Override
-	public boolean readInput() throws InterruptedException {
+	public boolean readInput() {
 		try {
 			Packet next = Packets.readPacket(Connection.this);
 			//System.out.println("Recieved: "+next.getClass());
@@ -74,7 +74,7 @@ public class Connection extends PrivateConnection {
 	}
 
 	@Override
-	public boolean writeOutput() throws InterruptedException {
+	public boolean writeOutput() {
 		while (outgoingPackets.size() > 0) {
 			try {
 				Packets.writePacket(Connection.this, outgoingPackets.peek());

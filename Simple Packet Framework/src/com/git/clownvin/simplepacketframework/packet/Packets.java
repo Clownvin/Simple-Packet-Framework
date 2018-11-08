@@ -105,7 +105,7 @@ public final class Packets {
 	 * data 	 - ? 	(4 + data.len);
 	 */
 
-	public static Packet readPacket(final Connection connection) throws IOException, InterruptedException, KeyExchangeIncompleteException {
+	public static Packet readPacket(final Connection connection) throws IOException, KeyExchangeIncompleteException {
 		var in = connection.getInputStream();
 		int count = 0;
 		while (count < 2) {
@@ -152,7 +152,7 @@ public final class Packets {
 		throw new IOException("Failed to read packet.");
 	}
 	
-	public static Response getResponse(final Connection connection, final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException, RequestTimedOutException {
+	public static Response getResponse(final Connection connection, final Request request) throws IOException, KeyExchangeIncompleteException, RequestTimedOutException, InterruptedException {
 		ResponseListener listener = new ResponseListener(request.getReqID(), connection);
 		addResponseListener(listener);
 		writePacket(connection, request);
@@ -167,7 +167,7 @@ public final class Packets {
 		return response;
 	}
 
-	public static void writePacket(final Connection connection, final Packet packet) throws IOException, InterruptedException, KeyExchangeIncompleteException {
+	public static void writePacket(final Connection connection, final Packet packet) throws IOException, KeyExchangeIncompleteException {
 		var buffer = new byte[2];
 		var out = connection.getOutputStream();
 		short s = getTypeForClass(packet.getClass());
