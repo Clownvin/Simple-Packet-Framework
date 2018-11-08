@@ -4,7 +4,7 @@ import com.git.clownvin.simplepacketframework.connection.Connection;
 
 public final class ResponseListener {
 	
-	private static long requestTimeout = 5000;
+	public static final long DEFAULT_TIMEOUT = 5000;
 	
 	private final long reqID;
 	private final Connection source;
@@ -31,8 +31,12 @@ public final class ResponseListener {
 	}
 	
 	public Response getResponse() throws InterruptedException, RequestTimedOutException {
+		return getResponse(DEFAULT_TIMEOUT);
+	}
+	
+	public Response getResponse(long timeout) throws InterruptedException, RequestTimedOutException {
 		long start = System.currentTimeMillis();
-		while (response == null && System.currentTimeMillis() - start < requestTimeout) {
+		while (response == null && System.currentTimeMillis() - start < timeout) {
 			synchronized (this) {
 				this.wait(1);
 			}
@@ -40,7 +44,7 @@ public final class ResponseListener {
 		if (response == null)
 			throw new RequestTimedOutException("Request timed out.");
 		Response r = response;
-		response = null;
+		response = null; //set to null incase reused
 		return r;
 	}
 }
