@@ -1,5 +1,7 @@
 package com.git.clownvin.simplepacketframework.test;
 
+import java.util.Base64;
+
 import com.git.clownvin.simplepacketframework.connection.Connection;
 import com.git.clownvin.simplepacketframework.packet.AbstractPacketHandler;
 import com.git.clownvin.simplepacketframework.packet.Packet;
@@ -67,7 +69,9 @@ public class TestServer extends AbstractServer {
 			@Override
 			public boolean handleRequest(Connection source, Request packet) {
 				totalBytes += packet.getBytes().length + 6;
-				source.send(new TestResponse(packet.getReqID()));
+				TestRequest req = (TestRequest) packet;
+				System.out.println("Recieved req with payload: "+Base64.getEncoder().encodeToString(req.getPayload()));
+				source.send(new TestResponse(packet.getReqID(), req.getPayload()));
 				return true;
 			}
 			

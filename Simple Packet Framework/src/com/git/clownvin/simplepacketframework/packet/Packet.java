@@ -1,5 +1,6 @@
 package com.git.clownvin.simplepacketframework.packet;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 public abstract class Packet {
@@ -23,8 +24,17 @@ public abstract class Packet {
 	public Packet(boolean construct, final byte[] bytes) {
 		this.bytes = bytes;
 		//System.out.println("Initializing packet with len: "+bytes.length);
-		if (construct)
-			construct(this.bytes);
+		if (construct) {
+			if (this instanceof Request) {
+				((Request) this).preConstructor(this.bytes);
+				construct(Arrays.copyOfRange(bytes, 8, bytes.length));
+			} else if (this instanceof Response) {
+				((Response) this).preConstructor(this.bytes);
+				construct(Arrays.copyOfRange(bytes, 8, bytes.length));
+			} else {
+				construct(this.bytes);
+			}
+		}
 	}
 
 	protected abstract void construct(final byte[] bytes);

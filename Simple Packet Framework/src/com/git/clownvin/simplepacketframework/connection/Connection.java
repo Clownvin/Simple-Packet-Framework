@@ -109,4 +109,9 @@ public class Connection extends PrivateConnection {
 		}
 		return true;
 	}
+
+	@Override
+	public void onKill() {
+		//Do nothing.
+	}
 }

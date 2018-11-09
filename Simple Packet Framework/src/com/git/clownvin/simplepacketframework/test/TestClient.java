@@ -3,6 +3,7 @@ package com.git.clownvin.simplepacketframework.test;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Base64;
 
 import com.git.clownvin.simplepacketframework.connection.Connection;
 import com.git.clownvin.simplepacketframework.packet.AbstractPacketHandler;
@@ -46,9 +47,11 @@ public class TestClient {
 		}
 		while (true) {
 			for (int i = 0; i < connections.length; i++) {
-				Request req = new TestRequest(new byte[0]);
+				TestRequest req = new TestRequest(new byte[] {1, 2, 3, 4, 5, 6});
 				try {
-					connections[i].getResponse(req);
+					System.out.println("Sending request with payload: "+Base64.getEncoder().encodeToString(req.getPayload()));
+					TestResponse r = (TestResponse) connections[i].getResponse(req);
+					System.out.println("Recieved response with payload: "+Base64.getEncoder().encodeToString(r.getPayload()));
 					//System.out.println("Sent req with id: "+req.getReqID()+", recieved res with id: "+connections[i].getResponse(req).getReqID());
 				} catch (RequestTimedOutException e) {
 					System.out.println("Request time out!");

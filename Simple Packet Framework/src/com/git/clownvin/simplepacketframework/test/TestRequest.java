@@ -4,8 +4,15 @@ import com.git.clownvin.simplepacketframework.packet.Request;
 
 public class TestRequest extends Request {
 	
+	private byte[] payload;
+	
 	public TestRequest(byte[] payload) {
 		this(false, payload);
+		this.payload = payload;
+	}
+	
+	public byte[] getPayload() {
+		return payload;
 	}
 	
 	public TestRequest(boolean construct, byte[] bytes) {
@@ -14,7 +21,7 @@ public class TestRequest extends Request {
 
 	@Override
 	protected void construct(byte[] bytes) {
-		//DO nothing.
+		payload = bytes;
 	}
 
 	@Override
