@@ -59,7 +59,6 @@ public final class Packets {
 					return true;
 				}
 			}
-			return true;
 		}
 		return packetHandler.handlePacket(source, packet);
 	}
