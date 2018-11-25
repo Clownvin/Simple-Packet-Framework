@@ -17,6 +17,11 @@ import com.git.clownvin.util.LinkedQueue;
 public class Connection extends PrivateConnection {
 	
 	private LinkedQueue<Packet> outgoingPackets;
+	private byte[] packetBuffer = new byte[Short.MAX_VALUE];
+	
+	public byte[] getPacketBuffer() {
+		return packetBuffer;
+	}
 
 	public Connection(final Socket socket) throws IOException {
 		super(socket);

@@ -7,12 +7,12 @@ public abstract class Response extends Packet {
 	protected long reqID;
 	
 	public Response(long reqID) {
-		super(false, ByteBuffer.allocate(8).putLong(reqID).array());
+		super(false, ByteBuffer.allocate(8).putLong(reqID).array(), 8);
 		this.reqID = reqID;
 	}
 	
-	public Response(boolean construct, byte[] bytes) {
-		super(construct, bytes);
+	public Response(boolean construct, byte[] bytes, int length) {
+		super(construct, bytes, length);
 	}
 	
 	public void preConstructor(byte[] bytes) {

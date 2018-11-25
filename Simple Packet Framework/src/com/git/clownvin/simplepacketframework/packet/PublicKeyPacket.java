@@ -33,16 +33,16 @@ public final class PublicKeyPacket extends Packet {
 	private PublicKey key;
 
 	public PublicKeyPacket(final PublicKey key) {
-		super(false, toBytes(key));
+		super(false, toBytes(key), -1);
 		this.key = key;
 	}
 	
-	public PublicKeyPacket(boolean construct, byte[] bytes) {
-		super(construct, bytes);
+	public PublicKeyPacket(boolean construct, byte[] bytes, int length) {
+		super(construct, bytes, length == -1 ? bytes.length : length);
 	}
 
 	@Override
-	protected void construct(byte[] bytes) {
+	protected void construct(byte[] bytes, int length) {
 		key = fromBytes(bytes);
 	}
 

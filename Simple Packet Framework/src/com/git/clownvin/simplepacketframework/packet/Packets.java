@@ -90,8 +90,8 @@ public final class Packets {
 		return typeDefinitions.get(cls);
 	}
 
-	private static void fillBuffer(byte[] buffer, final InputStream in) throws IOException {
-		for (var i = 0; i < buffer.length; i++) {
+	private static void fillBuffer(byte[] buffer, int amount, final InputStream in) throws IOException {
+		for (var i = 0; i < amount; i++) {
 			buffer[i] = (byte) in.read();
 		}
 	}
@@ -113,11 +113,11 @@ public final class Packets {
 			else
 				count = 0;
 		}
-		var buffer = new byte[2];
-		fillBuffer(buffer, in);
+		byte[] buffer = connection.getPacketBuffer();
+		fillBuffer(buffer, 2, in);
 		boolean decrypt = (buffer[0] & 0x80) > 0;
 		short type = (short) (((buffer[0] & 0x7F) << 8) | (buffer[1] & 0xFF));
-		fillBuffer(buffer, in);
+		fillBuffer(buffer, 2, in);
 		short size = (short) (((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF));
 		//System.out.println("Read packet with size: "+size);
 		//System.out.println("rSize: "+Integer.toHexString(size)+", "+Integer.toHexString(((buffer[0] & 0xFF) << 8))+", "+Integer.toHexString((buffer[1] & 0xFF)));
@@ -126,17 +126,18 @@ public final class Packets {
 		if (size < 0) {
 			throw new RuntimeException("Packet size cannot be negative. Size: " + size+", Type: "+type);
 		}
-		buffer = new byte[size];
-		fillBuffer(buffer, in);
-		if (decrypt)
-			buffer = connection.decrypt(buffer);
+		fillBuffer(buffer, size, in);
+		if (decrypt) {
+			buffer = connection.decrypt(buffer, size);
+			size = (short) buffer.length;
+		}
 		Class<? extends Packet> cls = classDefinitions.get(type);
 		if (cls == null) {
 			System.err.println("No packet definition for type: " + type + ". Add one using Packets.setPacketDefinition(int type, Class<? extends Packet>) cls)");
 			throw new RuntimeException("No packet definition for type: " + type + ". Add one using Packets.setPacketDefinition(int type, Class<? extends Packet>) cls)");
 		}
 		try {
-			Packet packet = cls.getConstructor(boolean.class, byte[].class).newInstance(true, buffer);
+			Packet packet = cls.getConstructor(boolean.class, byte[].class, int.class).newInstance(true, buffer, size);
 			return packet;
 		} catch (NoSuchMethodException e) {
 			System.out.println("Packet " + cls + "(type: " + type

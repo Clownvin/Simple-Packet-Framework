@@ -21,23 +21,23 @@ public abstract class Packet {
 	
 	protected byte[] bytes;
 
-	public Packet(boolean construct, final byte[] bytes) {
+	public Packet(boolean construct, final byte[] bytes, final int length) {
 		this.bytes = bytes;
 		//System.out.println("Initializing packet with len: "+bytes.length);
 		if (construct) {
 			if (this instanceof Request) {
 				((Request) this).preConstructor(this.bytes);
-				construct(Arrays.copyOfRange(bytes, 8, bytes.length));
+				construct(Arrays.copyOfRange(bytes, 8, length), length - 8);
 			} else if (this instanceof Response) {
 				((Response) this).preConstructor(this.bytes);
-				construct(Arrays.copyOfRange(bytes, 8, bytes.length));
+				construct(Arrays.copyOfRange(bytes, 8, length), length - 8);
 			} else {
-				construct(this.bytes);
+				construct(this.bytes, length);
 			}
 		}
 	}
 
-	protected abstract void construct(final byte[] bytes);
+	protected abstract void construct(final byte[] bytes, final int length);
 
 	public final int getType() {
 		return Packets.getTypeForClass(this.getClass());

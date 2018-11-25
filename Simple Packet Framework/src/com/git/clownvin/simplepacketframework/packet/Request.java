@@ -6,8 +6,8 @@ public abstract class Request extends Packet {
 	
 	protected long reqID;
 
-	public Request(boolean construct, byte[] bytes) {
-		super(construct, bytes);
+	public Request(boolean construct, byte[] bytes, int length) {
+		super(construct, bytes, length);
 		if (!construct) {
 			reqID = System.nanoTime();
 			this.bytes = combine(ByteBuffer.allocate(8).putLong(reqID).array(), bytes);
