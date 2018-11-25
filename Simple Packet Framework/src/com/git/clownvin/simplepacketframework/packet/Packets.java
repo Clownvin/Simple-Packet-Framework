@@ -91,9 +91,10 @@ public final class Packets {
 	}
 
 	private static void fillBuffer(byte[] buffer, int amount, final InputStream in) throws IOException {
-		for (var i = 0; i < amount; i++) {
-			buffer[i] = (byte) in.read();
-		}
+		in.read(buffer, 0, amount);
+//		for (var i = 0; i < amount; i++) {
+//			buffer[i] = (byte) in.read();
+//		}
 	}
 
 	/*
