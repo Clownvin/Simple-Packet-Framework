@@ -142,9 +142,9 @@ public final class Packets {
 			return packet;
 		} catch (NoSuchMethodException e) {
 			System.out.println("Packet " + cls + "(type: " + type
-					+ ") doesn't have a proper constructor! Please add a constructor with the signature: <init>(boolean, byte[][]).");
+					+ ") doesn't have a proper constructor! Please add a constructor with the signature: <init>(boolean, byte[], int).");
 			System.out.println("You should also just call the superconstructor with the same signature, it will handle the rest.");
-			System.out.println("Example: Constructor(boolean construct, byte[][] bytes) { super(construct, bytes); }");
+			System.out.println("Example: Constructor(boolean construct, byte[] bytes, int length) { super(construct, bytes, length); }");
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| SecurityException e) {
 			e.printStackTrace();
