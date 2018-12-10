@@ -39,10 +39,6 @@ public abstract class Packet {
 
 	protected abstract void construct(final byte[] bytes, final int length);
 
-	public final int getType() {
-		return Packets.getTypeForClass(this.getClass());
-	}
-
 	public final byte[] getBytes() {
 		return bytes;
 	}
@@ -56,7 +52,7 @@ public abstract class Packet {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Type: " + getType() + ", Size: " + sizeOf() + ", Data:\n");
+		builder.append("Class: " + this.getClass() + ", Size: " + sizeOf() + ", Data:\n");
 		builder.append(Base64.getEncoder().encodeToString(bytes));
 		builder.append('\n');
 		char[] chars = new char[bytes.length];

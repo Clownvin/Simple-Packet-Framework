@@ -1,100 +1,86 @@
 package com.git.clownvin.simplepacketframework.packet;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.SocketException;
 import java.util.Hashtable;
-import java.util.LinkedList;
 
 import com.git.clownvin.simplepacketframework.connection.Connection;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
 
-@SuppressWarnings("rawtypes")
-public final class Packets {
+public abstract class PacketSystem {
 
-	private static Hashtable<Short, Class<? extends Packet>> classDefinitions = new Hashtable<>();
-	private static Hashtable<Class<? extends Packet>, Short> typeDefinitions = new Hashtable<>();
-	private static LinkedList<ResponseListener> listeners = new LinkedList<>();
-	private static AbstractPacketHandler packetHandler = new AbstractPacketHandler() {
-
-		@Override
-		public boolean handlePacket(Connection source, Packet packet) {
-			throw new RuntimeException("Packet handler not set! Set one using Packets.setPacketHandler(PacketHandler instance)");
-		}
-
-		@Override
-		public boolean handleRequest(Connection source, Request packet) {
-			throw new RuntimeException("Packet handler not set! Set one using Packets.setPacketHandler(PacketHandler instance)");
-		}
-		
-	};
-	
-	public static void setPacketHandler(final AbstractPacketHandler<? extends Connection> packetHandler) {
-		Packets.packetHandler = packetHandler;
-	}
+	protected Hashtable<Short, Class<? extends Packet>> classDefinitions = new Hashtable<>();
+	protected Hashtable<Class<? extends Packet>, Short> typeDefinitions = new Hashtable<>();
+	protected Hashtable<Class<? extends Packet>, AbstractPacketHandler<? extends Connection, ? extends Packet>> packetHandlers = new Hashtable<>();
+	protected Hashtable<Long, ResponseListener> listeners = new Hashtable<>();
 	
 	@SuppressWarnings("unchecked")
-	public static <T extends AbstractPacketHandler<? extends Connection>> T getPacketHandler() {
-		return (T) packetHandler;
+	protected AbstractPacketHandler<Connection, Packet> getPacketHandler(Class<? extends Packet> cls) {
+		return (AbstractPacketHandler<Connection, Packet>) packetHandlers.get(cls);
 	}
 	
-	public static void addResponseListener(ResponseListener listener) {
-		listeners.add(listener);
+	protected void addResponseListener(ResponseListener listener) {
+		listeners.put(listener.getReqID(), listener);
 	}
 	
-	public static void removeResponseListener(ResponseListener listener) {
-		listeners.remove(listener);
+	protected void removeResponseListener(ResponseListener listener) {
+		listeners.remove(listener.getReqID());
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static boolean handle(Connection source, final Packet packet) {
-		if (packet instanceof Request) {
-			return packetHandler.handleRequest(source, (Request) packet);
-		}
+	public boolean handlePacket(Connection source, final Packet packet) {
 		if (packet instanceof Response) {
-			for (ResponseListener listener : listeners) {
-				if (listener.matches((Response) packet, source)) {
-					listener.setResponse((Response) packet);
-					return true;
-				}
+			ResponseListener listener = listeners.get(((Response)packet).getReqID());
+			if (listener != null) {
+				listener.setResponse((Response) packet);
+				return true;
 			}
+		}
+		AbstractPacketHandler<Connection, Packet> packetHandler = getPacketHandler(packet.getClass());
+		if (packetHandler == null) {
+			throw new RuntimeException("Packets has no packet handler for packet class: "+packet.getClass());
 		}
 		return packetHandler.handlePacket(source, packet);
 	}
 	
-	static {
-		classDefinitions.put((short) 0, PublicKeyPacket.class);
-		typeDefinitions.put(PublicKeyPacket.class, (short) 0);
-	}
+	public PacketSystem() {
+		setPacketDefinition(0, PublicKeyPacket.class);
+		setPacketHandler(PublicKeyPacket.class, new AbstractPacketHandler<Connection, PublicKeyPacket>() {
 
-	public static void setPacketDefinition(final int type, final Class<? extends Packet> cls) {
-		if (type <= 0)
+			@Override
+			public boolean handlePacket(Connection source, PublicKeyPacket packet) {
+				source.finishKeyExchange(packet.getKey());
+				return true;
+			}
+			
+		});
+		setupPackets();
+	}
+	
+	public abstract void setupPackets();
+
+	public <PacketT extends Packet> void setPacketHandler(final Class<PacketT> cls, final AbstractPacketHandler<? extends Connection, PacketT> packetHandler) {
+		packetHandlers.put(cls, packetHandler);
+	}
+	
+	public void setPacketDefinition(int type, final Class<? extends Packet> cls) {
+		if (type <= 0 && cls != PublicKeyPacket.class)
 			throw new IllegalArgumentException("Type must be a short value greater than 0.");
 		var _type = (short) type;
-		if (!classDefinitions.containsKey(_type))
-			classDefinitions.put(_type, cls);
-		if (!typeDefinitions.containsKey(cls))
-			typeDefinitions.put(cls, _type);
+		classDefinitions.put(_type, cls);
+		typeDefinitions.put(cls, _type);
 	}
 
-	public static Class<? extends Packet> getClassForType(final short type) {
+	private Class<? extends Packet> getClassForType(final short type) {
 		if (!classDefinitions.containsKey(type))
 			throw new RuntimeException("No class definition for type: "+type);
 		return classDefinitions.get(type);
 	}
 	
-	public static short getTypeForClass(Class<? extends Packet> cls) {
+	private short getTypeForClass(Class<? extends Packet> cls) {
 		if (!typeDefinitions.containsKey(cls))
 			throw new RuntimeException("No type definition for class: "+cls);
 		return typeDefinitions.get(cls);
-	}
-
-	private static void fillBuffer(byte[] buffer, int amount, final InputStream in) throws IOException {
-		in.read(buffer, 0, amount);
-//		for (var i = 0; i < amount; i++) {
-//			buffer[i] = (byte) in.read();
-//		}
 	}
 
 	/*
@@ -105,7 +91,7 @@ public final class Packets {
 	 * data 	 - ? 	(4 + data.len);
 	 */
 
-	public static Packet readPacket(final Connection connection) throws IOException, KeyExchangeIncompleteException {
+	public Packet readPacket(final Connection connection) throws IOException, KeyExchangeIncompleteException {
 		var in = connection.getInputStream();
 		int count = 0;
 		while (count < 2) {
@@ -115,10 +101,10 @@ public final class Packets {
 				count = 0;
 		}
 		byte[] buffer = connection.getPacketBuffer();
-		fillBuffer(buffer, 2, in);
+		in.read(buffer, 0, 2);
 		boolean decrypt = (buffer[0] & 0x80) > 0;
 		short type = (short) (((buffer[0] & 0x7F) << 8) | (buffer[1] & 0xFF));
-		fillBuffer(buffer, 2, in);
+		in.read(buffer, 0, 2);
 		short size = (short) (((buffer[0] & 0xFF) << 8) | (buffer[1] & 0xFF));
 		//System.out.println("Read packet with size: "+size);
 		//System.out.println("rSize: "+Integer.toHexString(size)+", "+Integer.toHexString(((buffer[0] & 0xFF) << 8))+", "+Integer.toHexString((buffer[1] & 0xFF)));
@@ -127,12 +113,12 @@ public final class Packets {
 		if (size < 0) {
 			throw new RuntimeException("Packet size cannot be negative. Size: " + size+", Type: "+type);
 		}
-		fillBuffer(buffer, size, in);
+		in.read(buffer, 0, size);
 		if (decrypt) {
 			buffer = connection.decrypt(buffer, size);
 			size = (short) buffer.length;
 		}
-		Class<? extends Packet> cls = classDefinitions.get(type);
+		Class<? extends Packet> cls = getClassForType(type);
 		if (cls == null) {
 			System.err.println("No packet definition for type: " + type + ". Add one using Packets.setPacketDefinition(int type, Class<? extends Packet>) cls)");
 			throw new RuntimeException("No packet definition for type: " + type + ". Add one using Packets.setPacketDefinition(int type, Class<? extends Packet>) cls)");
@@ -153,7 +139,7 @@ public final class Packets {
 		throw new IOException("Failed to read packet.");
 	}
 	
-	public static Response getResponse(final Connection connection, final Request request) throws IOException, KeyExchangeIncompleteException, RequestTimedOutException, InterruptedException {
+	public Response getResponse(final Connection connection, final Request request) throws IOException, KeyExchangeIncompleteException, RequestTimedOutException, InterruptedException {
 		ResponseListener listener = new ResponseListener(request.getReqID(), connection);
 		addResponseListener(listener);
 		writePacket(connection, request);
@@ -168,7 +154,7 @@ public final class Packets {
 		return response;
 	}
 
-	public static void writePacket(final Connection connection, final Packet packet) throws IOException, KeyExchangeIncompleteException {
+	public void writePacket(final Connection connection, final Packet packet) throws IOException, KeyExchangeIncompleteException {
 		var buffer = new byte[2];
 		var out = connection.getOutputStream();
 		short s = getTypeForClass(packet.getClass());

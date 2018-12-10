@@ -5,7 +5,7 @@ import java.net.Socket;
 import java.net.SocketException;
 
 import com.git.clownvin.simplepacketframework.packet.Packet;
-import com.git.clownvin.simplepacketframework.packet.Packets;
+import com.git.clownvin.simplepacketframework.packet.PacketSystem;
 import com.git.clownvin.simplepacketframework.packet.PublicKeyPacket;
 import com.git.clownvin.simplepacketframework.packet.Request;
 import com.git.clownvin.simplepacketframework.packet.RequestTimedOutException;
@@ -18,13 +18,15 @@ public class Connection extends PrivateConnection {
 	
 	private LinkedQueue<Packet> outgoingPackets;
 	private byte[] packetBuffer = new byte[Short.MAX_VALUE];
+	private final PacketSystem packetSystem;
 	
 	public byte[] getPacketBuffer() {
 		return packetBuffer;
 	}
 
-	public Connection(final Socket socket) throws IOException {
+	public Connection(final Socket socket, final PacketSystem packetSystem) throws IOException {
 		super(socket);
+		this.packetSystem = packetSystem;
 		start();
 	}
 	
@@ -44,23 +46,14 @@ public class Connection extends PrivateConnection {
 	}
 	
 	public final Response getResponse(final Request request) throws IOException, InterruptedException, KeyExchangeIncompleteException, RequestTimedOutException {
-		return Packets.getResponse(this, request);
+		return packetSystem.getResponse(this, request);
 	}
 
 	@Override
 	public boolean readInput() {
 		try {
-			Packet next = Packets.readPacket(Connection.this);
-			//System.out.println("Recieved: "+next.getClass());
-			if (next instanceof PublicKeyPacket && !exchangeComplete()) {
-				PublicKeyPacket packet = (PublicKeyPacket) next;
-				finishKeyExchange(packet.getKey());
-				return true;
-			} else if (next instanceof PublicKeyPacket) { //They probably want our key if they're pinging us their key
-				send(new PublicKeyPacket(getPublicKey()));
-				return true;
-			}
-			while (!Packets.handle(Connection.this, next));
+			Packet next = packetSystem.readPacket(Connection.this);
+			while (!packetSystem.handlePacket(Connection.this, next));
 		} catch (SocketException e) {
 			System.out.println(Connection.this + ": " + e.getMessage());
 			try {
@@ -82,7 +75,7 @@ public class Connection extends PrivateConnection {
 	public boolean writeOutput() {
 		while (outgoingPackets.size() > 0) {
 			try {
-				Packets.writePacket(Connection.this, outgoingPackets.peek());
+				packetSystem.writePacket(Connection.this, outgoingPackets.peek());
 				//System.out.println("Sent: "+outgoingPackets.peek().getClass());
 				outgoingPackets.remove(); //Pop it off since success.
 			} catch (SocketException e) {
