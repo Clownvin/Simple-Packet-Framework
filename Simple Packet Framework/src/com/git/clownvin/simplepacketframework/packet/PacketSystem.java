@@ -12,12 +12,12 @@ public abstract class PacketSystem {
 
 	protected Hashtable<Short, Class<? extends Packet>> classDefinitions = new Hashtable<>();
 	protected Hashtable<Class<? extends Packet>, Short> typeDefinitions = new Hashtable<>();
-	protected Hashtable<Class<? extends Packet>, AbstractPacketHandler<? extends Connection, ? extends Packet>> packetHandlers = new Hashtable<>();
+	protected Hashtable<Class<? extends Packet>, IPacketHandler<? extends Connection, ? extends Packet>> packetHandlers = new Hashtable<>();
 	protected Hashtable<Long, ResponseListener> listeners = new Hashtable<>();
 	
 	@SuppressWarnings("unchecked")
-	protected AbstractPacketHandler<Connection, Packet> getPacketHandler(Class<? extends Packet> cls) {
-		return (AbstractPacketHandler<Connection, Packet>) packetHandlers.get(cls);
+	protected IPacketHandler<Connection, Packet> getPacketHandler(Class<? extends Packet> cls) {
+		return (IPacketHandler<Connection, Packet>) packetHandlers.get(cls);
 	}
 	
 	protected void addResponseListener(ResponseListener listener) {
@@ -30,13 +30,13 @@ public abstract class PacketSystem {
 	
 	public boolean handlePacket(Connection source, final Packet packet) {
 		if (packet instanceof Response) {
-			ResponseListener listener = listeners.get(((Response)packet).getReqID());
+			var listener = listeners.get(((Response)packet).getReqID());
 			if (listener != null) {
 				listener.setResponse((Response) packet);
 				return true;
 			}
 		}
-		AbstractPacketHandler<Connection, Packet> packetHandler = getPacketHandler(packet.getClass());
+		var packetHandler = getPacketHandler(packet.getClass());
 		if (packetHandler == null) {
 			throw new RuntimeException("Packets has no packet handler for packet class: "+packet.getClass());
 		}
@@ -45,7 +45,7 @@ public abstract class PacketSystem {
 	
 	public PacketSystem() {
 		setPacketDefinition(0, PublicKeyPacket.class);
-		setPacketHandler(PublicKeyPacket.class, new AbstractPacketHandler<Connection, PublicKeyPacket>() {
+		setPacketHandler(PublicKeyPacket.class, new IPacketHandler<Connection, PublicKeyPacket>() {
 
 			@Override
 			public boolean handlePacket(Connection source, PublicKeyPacket packet) {
@@ -59,7 +59,7 @@ public abstract class PacketSystem {
 	
 	public abstract void setupPackets();
 
-	public <PacketT extends Packet> void setPacketHandler(final Class<PacketT> cls, final AbstractPacketHandler<? extends Connection, PacketT> packetHandler) {
+	public <PacketT extends Packet> void setPacketHandler(final Class<PacketT> cls, final IPacketHandler<? extends Connection, PacketT> packetHandler) {
 		packetHandlers.put(cls, packetHandler);
 	}
 	
