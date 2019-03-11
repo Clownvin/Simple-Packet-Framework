@@ -3,6 +3,8 @@ package com.git.clownvin.simplepacketframework.connection;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import com.git.clownvin.simplepacketframework.packet.Packet;
 import com.git.clownvin.simplepacketframework.packet.PacketSystem;
@@ -12,11 +14,11 @@ import com.git.clownvin.simplepacketframework.packet.RequestTimedOutException;
 import com.git.clownvin.simplepacketframework.packet.Response;
 import com.git.clownvin.simplescframework.connection.KeyExchangeIncompleteException;
 import com.git.clownvin.simplescframework.connection.PrivateConnection;
-import com.git.clownvin.util.LinkedQueue;
+import com.clownvin.util.CircularList;
 
 public class Connection extends PrivateConnection {
 	
-	private LinkedQueue<Packet> outgoingPackets;
+	private Queue<Packet> outgoingPackets;
 	private byte[] packetBuffer = new byte[Short.MAX_VALUE];
 	private final PacketSystem packetSystem;
 	
@@ -33,7 +35,7 @@ public class Connection extends PrivateConnection {
 	@Override
 	protected void setup() {
 		super.setup();
-		outgoingPackets = new LinkedQueue<Packet>();
+		outgoingPackets = new LinkedList<Packet>();
 		send(new PublicKeyPacket(getPublicKey()));
 	}
 
